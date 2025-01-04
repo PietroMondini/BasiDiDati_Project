@@ -146,7 +146,6 @@ CREATE OR REPLACE PROCEDURE autore_new (
 )
   LANGUAGE plpgsql
   AS $$
-    DECLARE _id uuid;
     BEGIN
 
       SET search_path TO biblioteca;
@@ -156,14 +155,14 @@ CREATE OR REPLACE PROCEDURE autore_new (
     END;
   $$;
 
--- Modifica i campi non NULL dell'autore con l'id dato
+-- Modifica i campi non NULL dell'autore con l'id dato, considerando che id è salvato come SERIAL ma plpgsql non lo riconosce. ONLY ADMINS
 CREATE OR REPLACE PROCEDURE autore_update (
-  _id           uuid,
-  _nome         TEXT,
-  _cognome      TEXT,
-  _datanascita  DATE,
-  _datamorte    DATE,
-  _biografia    TEXT
+  _id          INTEGER,
+  _nome        TEXT,
+  _cognome     TEXT,
+  _dataNascita DATE,
+  _dataMorte   DATE,
+  _biografia   TEXT
 )
   LANGUAGE plpgsql
   AS $$
@@ -172,13 +171,13 @@ CREATE OR REPLACE PROCEDURE autore_update (
       SET search_path TO biblioteca;
 
       UPDATE autori SET
-        nome = INITCAP(COALESCE(NULLIF(_nome, ''), nome)),
-        cognome = INITCAP(COALESCE(NULLIF(_cognome, ''), cognome)),
-        datanascita = COALESCE(_datanascita, datanascita),
-        datamorte = COALESCE(_datamorte, datamorte),
-        biografia = COALESCE(NULLIF(_biografia, ''), biografia)
+        nome        = INITCAP(COALESCE(NULLIF(_nome, ''), nome)),
+        cognome     = INITCAP(COALESCE(NULLIF(_cognome, ''), cognome)),
+        datanascita = COALESCE(_dataNascita, datanascita),
+        datamorte   = COALESCE(_dataMorte, datamorte),
+        biografia   = COALESCE(_biografia, biografia)
       WHERE id = _id;
-
+      
     END;
   $$;
 
@@ -186,7 +185,7 @@ CREATE OR REPLACE PROCEDURE autore_update (
 CREATE OR REPLACE PROCEDURE libro_new (
   _isbn         VARCHAR(13),
   _titolo       TEXT,
-  _autore       uuid,
+  _autore       INTEGER,
   _trama        TEXT,
   _casaEditrice TEXT
 )
@@ -204,11 +203,10 @@ CREATE OR REPLACE PROCEDURE libro_new (
 -- Modifica i campi non NULL del libro con l'isbn dato. ONLY ADMINS
   CREATE OR REPLACE PROCEDURE  copia_new (
     _isbn VARCHAR(13),
-    _sede uuid
+    _sede INTEGER
 )
   LANGUAGE plpgsql
   AS $$
-    DECLARE _id uuid;
     BEGIN
 
     SET search_path TO biblioteca;
@@ -221,7 +219,7 @@ CREATE OR REPLACE PROCEDURE libro_new (
 -- Aggiunge n copie di un libro in una sede. ONLY ADMINS
   CREATE OR REPLACE PROCEDURE copia_new_N (
     _isbn VARCHAR(13),
-    _sede uuid,
+    _sede INTEGER,
     _n integer
 )
   LANGUAGE plpgsql
@@ -278,9 +276,9 @@ CREATE OR REPLACE PROCEDURE libro_new (
 
 -- Modifica l'indirizzo e il civico della sede con l'id dato. ONLY ADMINS
   CREATE OR REPLACE PROCEDURE sede_update (
-    _id uuid,
-    _indirizzo text,
-    _civico smallint
+    _id         INTEGER,
+    _indirizzo  text,
+    _civico     smallint
   )
   LANGUAGE plpgsql 
   AS $$
@@ -299,7 +297,7 @@ CREATE OR REPLACE PROCEDURE libro_new (
 -- Aggiunge un nuovo prestito dati: [LETTORE, COPIA, DATA_INIZIO, SCADENZA].
 CREATE OR REPLACE PROCEDURE prestito_new (
   _lettore     uuid,
-  _copia       uuid,
+  _copia       INTEGER,
   _dataInizio  DATE
 )
   LANGUAGE plpgsql
@@ -319,7 +317,7 @@ CREATE OR REPLACE PROCEDURE prestito_new (
 -- Restituisce un prestito attivo dati: [LETTORE, COPIA]. ONLY ADMINS
 CREATE OR REPLACE PROCEDURE prestito_restituzione (
   _lettore uuid,
-  _copia   uuid,
+  _copia   INTEGER
 )
   LANGUAGE plpgsql
   AS $$
@@ -341,7 +339,7 @@ CREATE OR REPLACE PROCEDURE prestito_restituzione (
 -- Proroga, di 14 giorni, la data di scadenza di un prestito attivo dati: [LETTORE, COPIA]. ONLY ADMINS
 CREATE OR REPLACE PROCEDURE prestito_proroga (
   _lettore uuid,
-  _copia   uuid
+  _copia   INTEGER
 )
   LANGUAGE plpgsql
   AS $$

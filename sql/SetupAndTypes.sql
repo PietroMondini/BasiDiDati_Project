@@ -8,3 +8,4 @@ CREATE type TIPO_UTENTE AS ENUM ('lettore', 'bibliotecario');
 
 -- tipi di lettori 
 CREATE TYPE TIPO_LETTORE AS ENUM ('base', 'premium');
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
