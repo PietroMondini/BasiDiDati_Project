@@ -62,10 +62,11 @@ CREATE OR REPLACE PROCEDURE utente_update_password (
 
 -- Aggiunge un nuovo lettore dati: [NOME, COGNOME, PASSWORD, CF]
 CREATE OR REPLACE PROCEDURE lettore_new (
-  _nome     TEXT,
-  _cognome  TEXT,
-  _password TEXT,
-  _cf       VARCHAR(16)
+  _cf VARCHAR(16),
+  _nome TEXT,
+  _cognome TEXT,
+  _categoria TIPO_LETTORE,
+  _password TEXT
 )
   LANGUAGE plpgsql
   AS $$
@@ -75,10 +76,10 @@ CREATE OR REPLACE PROCEDURE lettore_new (
       SET search_path TO biblioteca;
 
       INSERT INTO utenti(cf, ruolo, password, nome, cognome)
-      VALUES (UPPER(_cf), crypt(_password, gen_salt('bf')), 'lettore', INITCAP(_nome), INITCAP(_cognome)) RETURNING id INTO _id;
+      VALUES (UPPER(_cf), 'lettore', _password, INITCAP(_nome), INITCAP(_cognome)) RETURNING id INTO _id;
 
       INSERT INTO lettori(id, categoria)
-      VALUES (_id, 'base');
+      VALUES (_id, _categoria);
       
     END;
   $$;
@@ -220,7 +221,7 @@ CREATE OR REPLACE PROCEDURE libro_new (
   CREATE OR REPLACE PROCEDURE copia_new_N (
     _isbn VARCHAR(13),
     _sede INTEGER,
-    _n integer
+    _n SMALLINT
 )
   LANGUAGE plpgsql
   AS $$
@@ -230,7 +231,7 @@ CREATE OR REPLACE PROCEDURE libro_new (
     SET search_path TO biblioteca;
     
     FOR _i IN 1.._n LOOP
-      PERFORM copia_new(_isbn, _sede);
+      CALL copia_new(_isbn, _sede);
     END LOOP;
 
     END;
@@ -253,40 +254,21 @@ CREATE OR REPLACE PROCEDURE libro_new (
     END;
   $$;
 
--- Modifica l'indirizzo e il civico della sede con la città e l'indirizzo dati. ONLY ADMINS
-  CREATE OR REPLACE PROCEDURE sede_update (
-    _città text,
-    _oldIndirizzo text,
-    _indirizzo text,
-    _civico smallint
-  )
-  LANGUAGE plpgsql 
-  AS $$
-    BEGIN
-
-    SET search_path TO biblioteca;
-    
-    UPDATE sedi SET
-      indirizzo = _indirizzo,
-      civico = _civico
-    WHERE città = _città AND indirizzo = _oldIndirizzo; 
-
-    END;
-  $$;
-
--- Modifica l'indirizzo e il civico della sede con l'id dato. ONLY ADMINS
+-- Modifica i dati della sede con l'id dato. ONLY ADMINS
   CREATE OR REPLACE PROCEDURE sede_update (
     _id         INTEGER,
+    _città      text,
     _indirizzo  text,
     _civico     smallint
   )
-  LANGUAGE plpgsql 
+  LANGUAGE plpgsql
   AS $$
     BEGIN
 
     SET search_path TO biblioteca;
     
     UPDATE sedi SET
+      città = INITCAP(_città),
       indirizzo = _indirizzo,
       civico = _civico
     WHERE id = _id; 
@@ -294,23 +276,19 @@ CREATE OR REPLACE PROCEDURE libro_new (
     END;
   $$;
 
--- Aggiunge un nuovo prestito dati: [LETTORE, COPIA, DATA_INIZIO, SCADENZA].
+-- Aggiunge un nuovo prestito dati: [LETTORE, COPIA].
 CREATE OR REPLACE PROCEDURE prestito_new (
   _lettore     uuid,
-  _copia       INTEGER,
-  _dataInizio  DATE
+  _copia       INTEGER
 )
   LANGUAGE plpgsql
   AS $$
-    DECLARE _scadenza DATE;
     BEGIN
 
     SET search_path TO biblioteca;
-    
-    _scadenza := _dataInizio + INTERVAL '30 days';
 
-    INSERT INTO prestiti(lettore, copia, datainizio, scadenza)
-      VALUES (_lettore, _copia, _dataInizio, _scadenza);
+    INSERT INTO prestiti(lettore, copia)
+      VALUES (_lettore, _copia);
     END;
   $$;
 
@@ -359,3 +337,20 @@ CREATE OR REPLACE PROCEDURE prestito_proroga (
     END;
   $$;
 
+-- Azzera riconsegne_ritardo del lettore con l'id dato. ONLY ADMINS
+
+CREATE OR REPLACE PROCEDURE reset_ritardi (
+  _id uuid
+)
+  LANGUAGE plpgsql
+  AS $$
+    BEGIN
+
+    SET search_path TO biblioteca;
+    
+    UPDATE lettori SET
+      riconsegne_ritardo = 0
+    WHERE id = _id;
+
+    END;
+  $$;

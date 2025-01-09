@@ -3,17 +3,8 @@
     ini_set("error_reporting", E_ALL);
     session_start();
     require_once("../phps/utilities.php");
-    if (!isset($_SESSION["ruolo"]) || $_SESSION["ruolo"] != "lettore") {
+    if (!isset($_SESSION["ruolo"]) || $_SESSION["ruolo"] != "bibliotecario") {
         redirect("../index.php");
-    }
-    if ( (!isset($_SESSION["categoria"])) || (!isset($_SESSION["ritardi"]))) {
-        if (isset($_SESSION["id"])) {
-            $result = get_categoria_ritardi($_SESSION["id"]);
-            $_SESSION["categoria"] = $result["categoria"];
-            $_SESSION["ritardi"] = $result["ritardi"];
-        } else {
-            redirect("../index.php");
-        }
     }
     include("../components/headers.php");
     include("../components/navbar.php");
@@ -21,7 +12,7 @@
 <section class="section">
     <div class="container">
         <h1 class="title">Benvenuto, <?= $_SESSION["nome"] ?>!</h1>
-        <h2 class="subtitle">Profilo personale lettore</h2>
+        <h2 class="subtitle">Profilo personale bibliotecario</h2>
         <div class="columns is-centered">
             <div class="column is-half">
                 <table class="table is-fullwidth is-hoverable">
@@ -43,14 +34,6 @@
                         <tr>
                             <td>Codice fiscale</td>
                             <td><?= $_SESSION["cf"] ?></td>
-                        </tr>
-                        <tr>
-                            <td>Account</td>
-                            <td><?= $_SESSION["categoria"] ?></td>
-                        </tr>
-                        <tr>
-                            <td> Riconsegne in ritardo <br> (sospensione a 5 ritardi)</td>
-                            <td> <?= $_SESSION["ritardi"] ?></td>
                         </tr>
                         <tr>
                             <td>Password</td>

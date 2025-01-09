@@ -232,7 +232,7 @@ CREATE TRIGGER controllo_proroga
     BEFORE UPDATE
     OF scadenza ON prestiti
     FOR EACH ROW
-        EXECUTE FUNCTION proroga_prestito();
+        EXECUTE FUNCTION controllo_proroga_prestito();
 
 -- 2.2.7 --> Statistiche sedi, aggiornamento automatico.
 --           Ogni volta che viene effettuato un prestito o una restituzione, o viene aggiunta o rimossa una copia,
@@ -252,10 +252,105 @@ RETURNS TRIGGER
     $$;
 
 CREATE TRIGGER aggiorna_statistiche_sedi
-    AFTER INSERT OR UPDATE OR DELETE
-    ON prestiti
-    OR copie
-    OR libri
+    AFTER INSERT OR UPDATE ON prestiti
     FOR EACH STATEMENT
         EXECUTE FUNCTION aggiorna_statistiche_sedi();
-        
+    
+CREATE TRIGGER aggiorna_statistiche_sedi
+    AFTER INSERT OR UPDATE ON copie
+    FOR EACH STATEMENT
+        EXECUTE FUNCTION aggiorna_statistiche_sedi();
+
+CREATE TRIGGER aggiorna_statistiche_sedi
+    AFTER INSERT OR UPDATE ON libri
+    FOR EACH STATEMENT
+        EXECUTE FUNCTION aggiorna_statistiche_sedi();
+
+-- BEFORE INSERT IN prestiti mette dataInizio = CURRENT_DATE e scadenza = CURRENT_DATE + 30 giorni
+
+CREATE OR REPLACE FUNCTION prestiti_insert()
+RETURNS TRIGGER 
+    LANGUAGE plpgsql
+    AS $$
+        BEGIN
+            SET search_path TO biblioteca;
+            
+            NEW.dataInizio = CURRENT_DATE;
+            NEW.scadenza = CURRENT_DATE + INTERVAL '30 days';
+            
+            RETURN NEW;
+        END;
+    $$;
+
+CREATE TRIGGER prestiti_insert
+    BEFORE INSERT
+    ON prestiti
+    FOR EACH ROW
+        EXECUTE FUNCTION prestiti_insert();
+
+-- ON DELETE IN prestiti rimette disponibilità = TRUE nella copia e se restituito in ritardo decrementa riconsegne_ritardo
+
+CREATE OR REPLACE FUNCTION prestiti_delete()
+RETURNS TRIGGER 
+    LANGUAGE plpgsql
+    AS $$
+        DECLARE
+            _scadenza DATE;
+        BEGIN
+            SET search_path TO biblioteca;
+            
+            SELECT scadenza INTO _scadenza
+            FROM prestiti
+            WHERE id = OLD.id;
+            
+            IF OLD.datarestituzione > _scadenza THEN
+                UPDATE lettori
+                SET riconsegne_ritardo = riconsegne_ritardo - 1
+                WHERE id = OLD.lettore;
+            END IF;
+            
+            UPDATE copie
+            SET disponibilità = TRUE
+            WHERE id = OLD.copia;
+            
+            RETURN OLD;
+        END;
+    $$;
+
+CREATE TRIGGER prestiti_delete
+    AFTER DELETE
+    ON prestiti
+    FOR EACH ROW
+        EXECUTE FUNCTION prestiti_delete();
+
+-- ON INSERT prestiti controlla che il lettore non abbia già un prestito attivo per quel libro
+
+CREATE OR REPLACE FUNCTION controllo_prestito_attivo()
+RETURNS TRIGGER 
+    LANGUAGE plpgsql
+    AS $$
+        DECLARE
+            _prestito_attivo BOOLEAN;
+        BEGIN
+            SET search_path TO biblioteca;
+            
+            SELECT TRUE
+            FROM prestiti
+            JOIN copie ON prestiti.copia = copie.id
+            WHERE lettore = NEW.lettore AND datarestituzione IS NULL
+            AND copie.libro = (SELECT libro FROM copie WHERE id = NEW.copia)
+            INTO _prestito_attivo;
+            
+            IF _prestito_attivo = TRUE THEN
+                RAISE EXCEPTION 'PRESTITO -- prestito attivo per questo libro.';
+            END IF;
+            
+            RETURN NEW;
+        END;
+    $$;
+
+CREATE TRIGGER controllo_prestito_attivo
+    BEFORE INSERT
+    ON prestiti
+    FOR EACH ROW
+        EXECUTE FUNCTION controllo_prestito_attivo();

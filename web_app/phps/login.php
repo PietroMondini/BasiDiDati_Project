@@ -13,10 +13,13 @@
         $login_result = check_login($cf, $password);
         if ($login_result[0]) {
             save_user_data($login_result[1]);
-            if ($SESSION["ruolo"] == "lettore") {
-                redirect("lettore/home.php");
-            } else {
-                redirect("bibliotecario/home.php");
+            if (isset($_SESSION["ruolo"])) {
+                switch ($_SESSION["ruolo"]) {
+                    case "lettore":
+                        redirect("../lettore/home.php");
+                    case "bibliotecario":
+                        redirect("../bibliotecario/home.php");
+                }
             }
 
         } else {

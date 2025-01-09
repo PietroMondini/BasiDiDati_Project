@@ -2,13 +2,22 @@
   <div class="container-fluid">
     <a class="navbar-brand mr-auto" href="../index.php">BUI - Biblioteche Universitarie Italiane</a>
     <div class="d-flex">
-      <a class="nav-link active" aria-current="page" href="<?php 
+      <?php 
         if ($_SESSION["ruolo"] == "lettore") {
-          echo "../lettore/account.php";
-        } else {
-          echo "../bibliotecario/account.php";
+      ?>
+        <a class="nav-link active" aria-current="page" href="../lettore/home.php">Home</a>
+        <a class="nav-link active" aria-current="page" href="../lettore/ricerca.php">Ricerca</a>
+        <a class="nav-link" href="../lettore/account.php">Account</a>
+      <?php
+        } else if ($_SESSION["ruolo"] == "bibliotecario") {
+      ?>
+        <a class="nav-link active" aria-current="page" href="../bibliotecario/home.php">Home</a>
+        <a class="nav-link" href="../bibliotecario/gest_lettori.php">Lettori</a>
+        <a class="nav-link" href="../bibliotecario/gest_libri.php">Libri</a>
+        <a class="nav-link" href="../bibliotecario/account.php">Account</a>
+      <?php
         }
-      ?>">Account</a>
+      ?>
       <button class="btn btn-outline-success" type="submit">
         <a href="../phps/logout.php">Logout</a>
       </button>

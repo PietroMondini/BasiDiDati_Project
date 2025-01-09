@@ -27,7 +27,8 @@ CREATE TABLE autori (
     cognome text NOT NULL CHECK (cognome ~* '^.+$'),
     dataNascita DATE NOT NULL,
     dataMorte DATE,
-    biografia TEXT
+    biografia TEXT,
+    CONSTRAINT autori_unici UNIQUE (nome, cognome, dataNascita)
 );
 
 -- Tabella sedi della biblioteca
@@ -35,14 +36,15 @@ CREATE TABLE sedi (
     id SERIAL PRIMARY KEY,
     città text NOT NULL,
     indirizzo text NOT NULL,
-    civico SMALLINT NOT NULL CHECK (civico >= 0)
+    civico SMALLINT NOT NULL CHECK (civico >= 0),
+    CONSTRAINT sedi_uniche UNIQUE (città, indirizzo, civico)
 );
 
 -- Tabella libri
 CREATE TABLE libri (
     ISBN VARCHAR(13) PRIMARY KEY,
     titolo text NOT NULL CHECK (titolo ~* '^.+$'),
-    autore SERIAL NOT NULL REFERENCES autori(id),
+    autore SERIAL REFERENCES autori(id),
     trama text NOT NULL CHECK (trama ~* '^.+$'),
     casaEditrice text NOT NULL CHECK (casaEditrice ~* '^.+$')
 );
@@ -95,16 +97,17 @@ SELECT
     p.dataInizio,
     p.scadenza,
     l.id AS lettore,
-    l.nome,
-    l.cognome
+    u.nome,
+    u.cognome
 FROM
     sedi s
     JOIN copie c ON s.id = c.sede
     JOIN prestiti p ON c.id = p.copia
     JOIN lettori l ON p.lettore = l.id
+    JOIN utenti u ON l.id = u.id
 WHERE
-    p.datarestituzione IS NULL AND p.scadenza < CURRENT_DATE;
+    p.datarestituzione IS NULL AND p.scadenza < CURRENT_DATE
 GROUP BY
-    s.id, l.id;
+    s.id, p.id, c.libro, p.dataInizio, p.scadenza, l.id, u.nome, u.cognome
 ORDER BY
     p.scadenza DESC;
