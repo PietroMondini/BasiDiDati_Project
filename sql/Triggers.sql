@@ -92,6 +92,7 @@ CREATE TRIGGER controllo_prestiti_attivi
     FOR EACH ROW
         EXECUTE FUNCTION limite_prestiti_attivi();
 
+
 -- 2.2.3 --> Ritardi nelle restituzioni.
 --           Se un prestito viene restituito in ritardo, il lettore viene penalizzato con un giorno di riconsegna in ritardo.
 
@@ -123,6 +124,7 @@ CREATE TRIGGER controllo_ritardi_restituzione
     ON prestiti
     FOR EACH ROW
         EXECUTE FUNCTION penalizzazione_ritardo();
+
 
 -- 2.2.4 --> Disponibilità copie.
 --           Se una copia viene prenotata, la disponibilità viene impostata a FALSE.
@@ -167,7 +169,7 @@ RETURNS TRIGGER
         END;
     $$;
 
-CREATE TRIGGER  aggiorna_disponibilità_restituzione
+CREATE TRIGGER aggiorna_disponibilità_restituzione
     AFTER UPDATE
     ON prestiti
     FOR EACH ROW
@@ -206,6 +208,7 @@ CREATE TRIGGER controllo_disponibilità
     FOR EACH ROW
         EXECUTE FUNCTION controllo_disponibilità();
 
+
 -- 2.2.5 --> Proroga prestiti.
 --           I prestiti possono essere prorogati di 14 giorni solo se non sono già in ritardo o già restituiti.
 
@@ -233,6 +236,7 @@ CREATE TRIGGER controllo_proroga
     OF scadenza ON prestiti
     FOR EACH ROW
         EXECUTE FUNCTION controllo_proroga_prestito();
+
 
 -- 2.2.7 --> Statistiche sedi, aggiornamento automatico.
 --           Ogni volta che viene effettuato un prestito o una restituzione, o viene aggiunta o rimossa una copia,
@@ -266,6 +270,7 @@ CREATE TRIGGER aggiorna_statistiche_sedi
     FOR EACH STATEMENT
         EXECUTE FUNCTION aggiorna_statistiche_sedi();
 
+
 -- BEFORE INSERT IN prestiti mette dataInizio = CURRENT_DATE e scadenza = CURRENT_DATE + 30 giorni
 
 CREATE OR REPLACE FUNCTION prestiti_insert()
@@ -287,6 +292,7 @@ CREATE TRIGGER prestiti_insert
     ON prestiti
     FOR EACH ROW
         EXECUTE FUNCTION prestiti_insert();
+
 
 -- ON DELETE IN prestiti rimette disponibilità = TRUE nella copia e se restituito in ritardo decrementa riconsegne_ritardo
 
@@ -322,6 +328,7 @@ CREATE TRIGGER prestiti_delete
     ON prestiti
     FOR EACH ROW
         EXECUTE FUNCTION prestiti_delete();
+
 
 -- ON INSERT prestiti controlla che il lettore non abbia già un prestito attivo per quel libro
 
