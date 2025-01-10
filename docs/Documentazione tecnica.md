@@ -15,6 +15,19 @@
         - [Procedure](#procedure)
         - [Funzioni](#funzioni)
         - [Triggers](#triggers)
+    - [Requisiti e come sono stati soddisfatti](#requisiti-e-come-sono-stati-soddisfatti)
+- [Web app](#web-app)
+    - [Login](#login)
+    - [Lettore](#lettore)
+        - [Home page](#home-page)
+        - [Profilo](#profilo)
+        - [Cambia password](#cambia-password)
+        - [Ricerca libri](#ricerca-libri)
+    - [Bibliotecario](#bibliotecario)
+        - [Home page](#home-page-1)
+        - [Gestione utenti](#gestione-utenti)
+        - [Gestione libri](#gestione-libri)
+
 
 ## Base di dati
 
