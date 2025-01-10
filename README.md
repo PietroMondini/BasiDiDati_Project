@@ -1,3 +1,3 @@
 # BasiDiDati_Project
-- Documentazione tecnica: [Documentazione tecnica](/docs/Documentazione tecnica.md)
-- Manuale utente: [Documentazione tecnica](/docs/Manuale utente.md)
+- [Documentazione tecnica](https://github.com/PietroMondini/biblioteca/blob/main/docs/Documentazione%20tecnica.md)
+- [Manuale utente](https://github.com/PietroMondini/biblioteca/blob/main/docs/Manuale%20utente.md)
