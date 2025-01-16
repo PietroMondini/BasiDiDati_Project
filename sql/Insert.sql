@@ -197,45 +197,61 @@ INSERT INTO bibliotecari (id) VALUES
 ((SELECT id FROM utenti WHERE cf = 'RCCLRA85M01H501Y')),
 ((SELECT id FROM utenti WHERE cf = 'VRDMLA85M01H501Y'));
 
--- Create a mockup of 100 prestiti using the 10 lettori and 100 copie available.
+
 CREATE OR REPLACE FUNCTION create_mockup_prestiti()
 RETURNS void AS $$
 DECLARE
     i INTEGER;
-    lettore_id uuid;
+    lettore_record RECORD;
     copia_id INTEGER;
     prestito_date DATE;
     data_restituzione DATE;
+    scadenza DATE;
 BEGIN
     FOR i IN 1..100 LOOP
-        SELECT id INTO lettore_id FROM lettori ORDER BY RANDOM() LIMIT 1;
-        SELECT id INTO copia_id FROM copie WHERE disponibilità = TRUE ORDER BY RANDOM() LIMIT 1;
-        
-        IF RANDOM() < 0.5 THEN
-            data_restituzione := NULL;
-        ELSE
-            data_restituzione := CURRENT_DATE + ((random()*365)::TEXT || ' days')::INTERVAL;
-        END IF;
-        prestito_date := CURRENT_DATE - ((random()*365)::TEXT || ' days')::INTERVAL;
-        BEGIN
-            INSERT INTO prestiti (lettore, copia, datainizio)
-            VALUES (lettore_id, copia_id, prestito_date);
-        EXCEPTION
-            WHEN OTHERS THEN
-                RAISE NOTICE 'Error inserting prestito: %', SQLERRM;
-        END;
 
-        IF data_restituzione IS NOT NULL THEN
+        SELECT * INTO lettore_record 
+        FROM lettori 
+        ORDER BY RANDOM() 
+        LIMIT 1;
+        
+        IF lettore_record.riconsegne_ritardo < 5 THEN
+            SELECT id INTO copia_id 
+            FROM copie 
+            WHERE disponibilità = TRUE 
+            ORDER BY RANDOM() 
+            LIMIT 1;
+            
+            IF RANDOM() < 0.5 THEN
+                data_restituzione := NULL;
+            ELSE
+                data_restituzione := CURRENT_DATE + ((random()*60)::TEXT || ' days')::INTERVAL;
+            END IF;
+            
+            prestito_date := CURRENT_DATE - ((random()*90)::TEXT || ' days')::INTERVAL;
+            scadenza := prestito_date + INTERVAL '30 days';
+            
+            IF data_restituzione IS NOT NULL AND data_restituzione > scadenza THEN
+                UPDATE lettori 
+                SET riconsegne_ritardo = lettore_record.riconsegne_ritardo + 1 
+                WHERE id = lettore_record.id;
+            END IF;
+
             BEGIN
-                UPDATE prestiti SET datarestituzione = data_restituzione WHERE lettore = lettore_id AND copia = copia_id;
+                SET session_replication_role = replica;
+                INSERT INTO prestiti (lettore, copia, datainizio, scadenza, datarestituzione)
+                VALUES (lettore_record.id, copia_id, prestito_date, scadenza, data_restituzione);
             EXCEPTION
                 WHEN OTHERS THEN
-                    RAISE NOTICE 'Error updating prestito: %', SQLERRM;
+                    RAISE NOTICE 'Error inserting prestito: %', SQLERRM;
             END;
         END IF;
     END LOOP;
+    SET session_replication_role = DEFAULT;
 END;
 $$ LANGUAGE plpgsql;
 
+
 SELECT create_mockup_prestiti();
+
 

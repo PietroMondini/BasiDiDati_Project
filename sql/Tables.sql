@@ -93,6 +93,7 @@ CREATE VIEW report_ritardi_sedi AS
 SELECT
     s.id AS sede,
     p.id AS prestito,
+    c.id as copia,
     c.libro AS ISBN,
     p.dataInizio,
     p.scadenza,
@@ -108,6 +109,6 @@ FROM
 WHERE
     p.datarestituzione IS NULL AND p.scadenza < CURRENT_DATE
 GROUP BY
-    s.id, p.id, c.libro, p.dataInizio, p.scadenza, l.id, u.nome, u.cognome
+    s.id, p.id, c.libro, p.dataInizio, p.scadenza, l.id, u.nome, u.cognome, c.id
 ORDER BY
     p.scadenza DESC;

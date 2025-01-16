@@ -973,7 +973,7 @@ AS $$
   END;
 $$;
 
--- Genera un report sui prestiti in ritardo per ogni sede, ritornando la vista report_ritardi_sedi
+-- Refresh della vista report_ritardi_sedi e ritorna i suoi valori
 CREATE OR REPLACE FUNCTION report_ritardi_sedi ()
 RETURNS TABLE (
   sede INTEGER,
@@ -992,19 +992,25 @@ AS $$
 
   SET search_path TO biblioteca;
 
+  REFRESH VIEW report_ritardi_sedi;
+
   RETURN QUERY
     SELECT
-      sede,
-      lettore,
-      copia,
-      dataInizio,
-      scadenza,
-      dataRestituzione
-    FROM report_ritardi_sedi;
+      r.sede,
+      r.lettore,
+      r.copia,
+      r.prestito,
+      r.ISBN,
+      r.nome,
+      r.cognome,
+      r.dataInizio,
+      r.scadenza
+    FROM report_ritardi_sedi r
+    ORDER BY r.sede, r.dataInizio, r.scadenza;
+
 
   END;
 $$;
-
 
 -- check_login --> procedura usata per il login dell'utente con il cf e la password dati 
 --                 restituisce la tabella dei dati dell'utente da passare al client, se esiste
